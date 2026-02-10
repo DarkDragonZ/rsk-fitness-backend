@@ -18,54 +18,60 @@ export class ReportsService {
   ) {}
 
   async getStats(): Promise<any> {
-    const totalMembers = await this.memberModel.countDocuments();
-    const activeMembers = await this.memberModel.countDocuments({activeStatus: true});
-
     const today = new Date();
     today.setHours(0,0,0,0);
     const t = new Date(today);
     t.setDate(t.getDate() + 1);
-    const todayAttendance = await this.attendanceModel.countDocuments({
-      date: { $gte: today, $lt: t},
-    });
 
     const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const thisMonthRevenue = await this.paymentModel.aggregate([
-      {$match: {paymentDate: {$gte: firstOfMonth}}},
-      {$group: {_id: null, total: {$sum: '$amount'}}},
-    ]);
-    const monthlyRevenue = thisMonthRevenue[0]?.total || 0;
-
     // Fetch the Attendance Growth in current month and previus month
     const previousMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 1);
-    const currentMonthAttendance = await this.attendanceModel.countDocuments({
-      date: { $gte: firstOfMonth },
-    });
-    const previousMonthAttendance = await this.attendanceModel.countDocuments({
-      date: { $gte: previousMonthStart, $lt: previousMonthEnd },
-    });
+
+    // daily visit
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [
+      totalMembers,
+      activeMembers,
+      todayAttendance,
+      thisMonthRevenue,
+      currentMonthAttendance,
+      previousMonthAttendance,
+      previousMonthRevenue,
+      dailyVisits,
+    ] = await Promise.all([
+      this.memberModel.countDocuments(),
+      this.memberModel.countDocuments({activeStatus: true}),
+      this.attendanceModel.countDocuments({ date: { $gte: today, $lt: t} }),
+      this.paymentModel.aggregate([
+        {$match: {paymentDate: {$gte: firstOfMonth}}},
+        {$group: {_id: null, total: {$sum: '$amount'}}},
+      ]),
+      this.attendanceModel.countDocuments({ date: { $gte: firstOfMonth } }),
+      this.attendanceModel.countDocuments({ date: { $gte: previousMonthStart, $lt: previousMonthEnd } }),
+      this.paymentModel.aggregate([
+        { $match: { paymentDate: { $gte: previousMonthStart, $lt: previousMonthEnd } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      this.attendanceModel.aggregate([
+        { $match: { date: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }, count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const monthlyRevenue = thisMonthRevenue[0]?.total || 0;
     const attendanceGrowth = previousMonthAttendance > 0
       ? ((currentMonthAttendance - previousMonthAttendance) / previousMonthAttendance) * 100
       : 0;
 
     // Getting the Revenue
-    const previousMonthRevenue = await this.paymentModel.aggregate([
-      { $match: { paymentDate: { $gte: previousMonthStart, $lt: previousMonthEnd } } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
-    ]);
     const prevRevenue = previousMonthRevenue[0]?.total || 0;
     const revenueGrowth = prevRevenue > 0
       ? ((monthlyRevenue - prevRevenue) / prevRevenue) * 100
       : 0;
 
-    // daily visit
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const dailyVisits = await this.attendanceModel.aggregate([
-      { $match: { date: { $gte: thirtyDaysAgo } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }, count: { $sum: 1 } } },
-    ]);
     const averageDailyVisits = dailyVisits.length > 0
       ? dailyVisits.reduce((sum, day) => sum + day.count, 0) / dailyVisits.length
       : 0;
