@@ -14,7 +14,7 @@ export class MembersService {
     @InjectModel(Member.name) private memberModel: Model<Member>,
     private configService: ConfigService,
     private notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   async create(memberDto: MemberDto): Promise<MemberDto> {
     if (!memberDto) {
@@ -79,7 +79,7 @@ export class MembersService {
     }
     const member = await this.memberModel.findById(memberId).exec();
 
-    console.log("Found Member",member);
+    console.log("Found Member", member);
 
     if (!member) {
       throw new HttpException(
@@ -99,7 +99,7 @@ export class MembersService {
     }
     const member = await this.memberModel.findOne({ nicNumber }).exec();
 
-    console.log("Found Member",member);
+    console.log("Found Member", member);
 
     if (!member) {
       throw new HttpException(
@@ -234,7 +234,10 @@ export class MembersService {
     }
 
     // Extract base64 content from Data URL
-    const base64Data = request.qrCode.replace(/^data:image\/png;base64,/, '');
+    const base64Data = request.qrCode.replace(
+      /^data:image\/png;base64,/,
+      '',
+    );
     const qrBuffer = Buffer.from(base64Data, 'base64');
 
     const transporter = nodemailer.createTransport({
@@ -250,18 +253,63 @@ export class MembersService {
     const mailOptions = {
       from: this.configService.get<string>('EMAIL_USER'),
       to: request.email,
-      subject: 'Your Gym Membership QR Code',
+      subject: 'Your RSK Fitness Access QR Code',
       html: `
-      <p>Hello ${request.name},</p>
-      <p>Here is your QR code for gym access:</p>
-      <img src="cid:qrCodeImage" alt="QR Code" style="width:200px; height:auto;" />
-      <p>Thank you for being a valued member.</p>
+      <div style="font-family: Arial, Helvetica, sans-serif; color:#111; line-height:1.5;">
+        <p style="margin:0 0 12px;">Hi ${request.name},</p>
+
+        <p style="margin:0 0 12px;">
+          Welcome to <strong>RSK Fitness</strong>! Below is your membership QR code for gym access.
+        </p>
+
+        <div style="margin:16px 0; text-align:center;">
+          <img
+            src="cid:qrCodeInline"
+            alt="RSK Fitness QR Code"
+            style="width:220px; height:auto; border:1px solid #eee; padding:10px; border-radius:8px;"
+          />
+        </div>
+
+        <div style="text-align:center; margin:12px 0 18px;">
+          <p style="margin:0 0 8px;">
+            You can download and save your QR code for easy access.
+          </p>
+          <p style="margin:0; font-size:14px;">
+            📎 <strong>Attached:</strong> RSK-Fitness-QR.png
+          </p>
+        </div>
+
+        <p style="margin:0 0 12px;">
+          <strong>Tip:</strong> You can also take a screenshot of the QR code for faster entry.
+        </p>
+
+        <p style="margin:0 0 12px;">
+          Please keep this QR code private — it’s linked to your membership.
+        </p>
+
+        <p style="margin:0;">
+          See you at the gym,<br/>
+          <strong>RSK Fitness Team</strong>
+        </p>
+
+        <hr style="border:none; border-top:1px solid #eee; margin:18px 0;" />
+
+        <p style="font-size:12px; color:#666; margin:0;">
+          If you didn’t request this email, please reply to this message or contact our front desk.
+        </p>
+      </div>
     `,
       attachments: [
         {
-          filename: 'qrcode.png',
+          filename: 'rsk-fitness-qr-inline.png',
           content: qrBuffer,
-          cid: 'qrCodeImage', // Matches `cid:` in HTML img tag
+          cid: 'qrCodeInline',
+        },
+        {
+          filename: 'RSK-Fitness-QR.png',
+          content: qrBuffer,
+          contentType: 'image/png',
+          disposition: 'attachment',
         },
       ],
     };
