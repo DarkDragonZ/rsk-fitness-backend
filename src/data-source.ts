@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { AttendanceScan } from './attendance/attendance-scan.entity';
+// import { AttendanceScan } from './attendance/attendance-scan.entity';
 
 const PG_PORT = parseInt(process.env.PG_PORT || '5432', 10);
 
@@ -13,7 +13,7 @@ export default new DataSource({
   username: process.env.PG_USERNAME || 'postgres',
   password: process.env.PG_PASSWORD || 'postgres',
   database: process.env.PG_DATABASE || 'gym',
-  entities: [AttendanceScan],
+  // entities: [AttendanceScan],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.NODE_ENV !== 'production', 
   logging: process.env.NODE_ENV !== 'production', 
