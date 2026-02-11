@@ -16,9 +16,10 @@ async function bootstrap() {
 
   const allowedOrigins = [
     'http://localhost:3000',
-    `http://192.168.1.3:3000`,// Local development.
+    `http://192.168.1.3:3000`,
     'https://rskfitness.technook.lk',
-    'https://www.rskfitness.technook.lk'
+    'https://www.rskfitness.technook.lk',
+    'https://rsk-fitness.vercel.app'
   ];
 
   app.enableCors({
